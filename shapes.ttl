@@ -1,0 +1,890 @@
+@prefix ex:  <https://example.org/quotation-kg/> .
+@prefix sh:  <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+#################################################################
+# Reusable shapes
+#################################################################
+
+ex:EntityIdPropertyShape
+    a sh:PropertyShape ;
+    sh:path ex:id ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string ;
+    sh:pattern "^e[0-9]+$" ;
+    sh:message "Every extracted entity must have exactly one document-local ID matching ^e[0-9]+$." .
+
+#################################################################
+# Global relationship constraints
+#################################################################
+
+ex:NoSelfReferencingRelationshipsShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf ex:hasLineItem ;
+    sh:targetSubjectsOf ex:issuedBy ;
+    sh:targetSubjectsOf ex:locatedIn ;
+    sh:targetSubjectsOf ex:validDuring ;
+    sh:targetSubjectsOf ex:correspondsTo ;
+    sh:targetSubjectsOf ex:hasIdentifier ;
+    sh:targetSubjectsOf ex:hasLeadTime ;
+    sh:targetSubjectsOf ex:hasWarranty ;
+    sh:targetSubjectsOf ex:hasMinOrderQuantity ;
+    sh:targetSubjectsOf ex:hasMaxOrderQuantity ;
+    sh:targetSubjectsOf ex:hasOrderMultiple ;
+    sh:targetSubjectsOf ex:hasPricing ;
+    sh:targetSubjectsOf ex:hasQuotedQuantity ;
+    sh:targetSubjectsOf ex:hasPriceTier ;
+    sh:targetSubjectsOf ex:hasMinQuantity ;
+    sh:targetSubjectsOf ex:hasMaxQuantity ;
+    sh:targetSubjectsOf ex:hasMonetaryAmount ;
+    sh:targetSubjectsOf ex:hasPriceComponent ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "A relationship may not use the same entity as both source and target." ;
+        sh:select """
+            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+            SELECT $this ?path
+            WHERE {
+                $this ?path $this .
+                FILTER (?path != rdf:type)
+            }
+        """
+    ] .
+
+#################################################################
+# Quotation
+#################################################################
+
+ex:QuotationShape
+    a sh:NodeShape ;
+    sh:targetClass ex:Quotation ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property ex:EntityIdPropertyShape ;
+    sh:property [
+        sh:path ex:language ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:in ( "EN"^^xsd:string "NL"^^xsd:string "DE"^^xsd:string ) ;
+        sh:message "A Quotation must have exactly one allowed language code: EN, NL, or DE."
+    ] ;
+    sh:property [
+        sh:path ex:quotationDate ; sh:maxCount 1 ; sh:datatype xsd:date ;
+        sh:message "quotation_date must be an ISO 8601 date when provided."
+    ] ;
+    sh:property [
+        sh:path ex:issuedBy ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class ex:Supplier ; sh:nodeKind sh:IRI ;
+        sh:message "Every Quotation must be issued by exactly one Supplier."
+    ] ;
+    sh:property [
+        sh:path ex:validDuring ;
+        sh:maxCount 1 ;
+        sh:class ex:ValidityPeriod ;
+        sh:nodeKind sh:IRI ;
+        sh:message "A Quotation may have at most one explicitly stated ValidityPeriod."
+    ] ;
+    sh:property [
+        sh:path ex:hasLineItem ; sh:minCount 1 ;
+        sh:class ex:QuotationLine ; sh:nodeKind sh:IRI ;
+        sh:message "Every Quotation must have at least one QuotationLine."
+    ] ;
+    sh:property [
+        sh:path ex:hasWarranty ; sh:maxCount 1 ;
+        sh:class ex:Warranty ; sh:nodeKind sh:IRI ;
+        sh:message "A Quotation may have at most one quotation-level Warranty."
+    ] .
+
+#################################################################
+# QuotationLine
+#################################################################
+
+ex:QuotationLineShape
+    a sh:NodeShape ;
+    sh:targetClass ex:QuotationLine ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property ex:EntityIdPropertyShape ;
+    sh:property [
+        sh:path ex:lineNumber ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:integer ; sh:minInclusive 1 ;
+        sh:message "Every QuotationLine must have exactly one positive line_number."
+    ] ;
+    sh:property [
+        sh:path [ sh:inversePath ex:hasLineItem ] ;
+        sh:minCount 1 ; sh:maxCount 1 ; sh:class ex:Quotation ;
+        sh:message "Every QuotationLine must belong to exactly one Quotation."
+    ] ;
+    sh:property [
+        sh:path ex:correspondsTo ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class ex:QuotedItem ; sh:nodeKind sh:IRI ;
+        sh:message "Every QuotationLine must correspond to exactly one QuotedItem."
+    ] ;
+    sh:property [
+        sh:path ex:hasLeadTime ; sh:maxCount 1 ;
+        sh:class ex:LeadTime ; sh:nodeKind sh:IRI ;
+        sh:message "A QuotationLine may have at most one LeadTime."
+    ] ;
+    sh:property [
+        sh:path ex:hasWarranty ; sh:maxCount 1 ;
+        sh:class ex:Warranty ; sh:nodeKind sh:IRI ;
+        sh:message "A QuotationLine may have at most one line-level Warranty."
+    ] ;
+    sh:property [
+        sh:path ex:hasMinOrderQuantity ; sh:maxCount 1 ;
+        sh:class ex:OrderQuantity ; sh:nodeKind sh:IRI ;
+        sh:message "A QuotationLine may have at most one minimum order quantity."
+    ] ;
+    sh:property [
+        sh:path ex:hasMaxOrderQuantity ; sh:maxCount 1 ;
+        sh:class ex:OrderQuantity ; sh:nodeKind sh:IRI ;
+        sh:message "A QuotationLine may have at most one maximum order quantity."
+    ] ;
+    sh:property [
+        sh:path ex:hasOrderMultiple ; sh:maxCount 1 ;
+        sh:class ex:OrderQuantity ; sh:nodeKind sh:IRI ;
+        sh:message "A QuotationLine may have at most one order multiple."
+    ] ;
+    sh:property [
+        sh:path ex:hasPricing ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
+        sh:or ( [ sh:class ex:StandardPricing ] [ sh:class ex:TieredPricing ] ) ;
+        sh:message "HAS_PRICING must point to StandardPricing or TieredPricing."
+    ] .
+
+#################################################################
+# Supplier and Country
+#################################################################
+
+ex:SupplierShape
+    a sh:NodeShape ;
+    sh:targetClass ex:Supplier ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property ex:EntityIdPropertyShape ;
+    sh:property [
+        sh:path ex:name ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:minLength 1 ;
+        sh:message "Every Supplier must have exactly one non-empty name."
+    ] ;
+    sh:property [
+        sh:path ex:locatedIn ; sh:maxCount 1 ;
+        sh:class ex:Country ; sh:nodeKind sh:IRI ;
+        sh:message "A Supplier may be located in at most one explicitly stated Country."
+    ] ;
+    sh:property [
+        sh:path [ sh:inversePath ex:issuedBy ] ;
+        sh:minCount 1 ; sh:maxCount 1 ; sh:class ex:Quotation ;
+        sh:message "Every document-local Supplier must have exactly one incoming ISSUED_BY relationship."
+    ] .
+
+ex:CountryShape
+    a sh:NodeShape ;
+    sh:targetClass ex:Country ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property ex:EntityIdPropertyShape ;
+    sh:property [
+        sh:path ex:countryCode ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:in (
+            "NL"^^xsd:string
+            "US"^^xsd:string
+            "DE"^^xsd:string
+            "HK"^^xsd:string
+            "TW"^^xsd:string
+            "SK"^^xsd:string
+            "MY"^^xsd:string
+            "GB"^^xsd:string
+            "CH"^^xsd:string
+            "CN"^^xsd:string
+            "FR"^^xsd:string
+            "BE"^^xsd:string
+            "AT"^^xsd:string
+            "CZ"^^xsd:string
+            "PL"^^xsd:string
+            "SE"^^xsd:string
+            "DK"^^xsd:string
+            "NO"^^xsd:string
+            "FI"^^xsd:string
+            "IT"^^xsd:string
+            "ES"^^xsd:string
+            "CA"^^xsd:string
+            "JP"^^xsd:string
+            "KR"^^xsd:string
+            "SG"^^xsd:string
+            "IN"^^xsd:string
+            "IE"^^xsd:string
+            "HU"^^xsd:string
+            "RO"^^xsd:string
+            "IL"^^xsd:string
+        );
+        sh:message "Country.country_code must use an allowed country code."
+    ] ;
+    sh:property [
+        sh:path [ sh:inversePath ex:locatedIn ] ;
+        sh:minCount 1 ; sh:maxCount 1 ; sh:class ex:Supplier ;
+        sh:message "Every document-local Country must have exactly one incoming LOCATED_IN relationship."
+    ] .
+
+#################################################################
+# ValidityPeriod
+#################################################################
+
+ex:ValidityPeriodShape
+    a sh:NodeShape ;
+    sh:targetClass ex:ValidityPeriod ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property ex:EntityIdPropertyShape ;
+    sh:property [ sh:path ex:validFrom ; sh:maxCount 1 ; sh:datatype xsd:date ] ;
+    sh:property [ sh:path ex:validTo ; sh:maxCount 1 ; sh:datatype xsd:date ] ;
+    sh:property [ sh:path ex:durationValue ; sh:maxCount 1 ; sh:datatype xsd:decimal ; sh:minExclusive 0 ] ;
+    sh:property [
+        sh:path ex:durationUnit ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:in (
+            "DAYS"^^xsd:string
+            "WEEKS"^^xsd:string
+            "MONTHS"^^xsd:string
+            "YEARS"^^xsd:string
+        )
+    ] ;
+    sh:xone (
+        [
+            sh:or (
+                [ sh:property [ sh:path ex:validFrom ; sh:minCount 1 ] ]
+                [ sh:property [ sh:path ex:validTo ; sh:minCount 1 ] ]
+            ) ;
+            sh:property [ sh:path ex:durationValue ; sh:maxCount 0 ] ;
+            sh:property [ sh:path ex:durationUnit ; sh:maxCount 0 ]
+        ]
+        [
+            sh:property [ sh:path ex:durationValue ; sh:minCount 1 ; sh:maxCount 1 ] ;
+            sh:property [ sh:path ex:durationUnit ; sh:minCount 1 ; sh:maxCount 1 ] ;
+            sh:property [ sh:path ex:validFrom ; sh:maxCount 0 ] ;
+            sh:property [ sh:path ex:validTo ; sh:maxCount 0 ]
+        ]
+    ) ;
+    sh:message "ValidityPeriod must use either absolute dates or a relative duration, but not both." ;
+    sh:property [
+        sh:path [ sh:inversePath ex:validDuring ] ;
+        sh:minCount 1 ; sh:maxCount 1 ; sh:class ex:Quotation ;
+        sh:message "Every ValidityPeriod must belong to exactly one Quotation."
+    ] ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "valid_from must not be later than valid_to." ;
+        sh:select """
+            PREFIX ex: <https://example.org/quotation-kg/>
+            SELECT $this
+            WHERE {
+                $this ex:validFrom ?from ; ex:validTo ?to .
+                FILTER (?from > ?to)
+            }
+        """
+    ] .
+
+#################################################################
+# QuotedItem and MaterialIdentifier
+#################################################################
+
+ex:QuotedItemShape
+    a sh:NodeShape ;
+    sh:targetClass ex:QuotedItem ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property ex:EntityIdPropertyShape ;
+    sh:property [
+        sh:path ex:description ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:minLength 1 ;
+        sh:message "Every QuotedItem must have exactly one non-empty description."
+    ] ;
+    sh:property [
+        sh:path ex:itemType ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:in (
+            "MATERIAL"^^xsd:string
+            "PRODUCT"^^xsd:string
+            "SERVICE"^^xsd:string
+            "LABOR"^^xsd:string
+            "REPAIR"^^xsd:string
+            "TOOLING"^^xsd:string
+            "OTHER"^^xsd:string
+        );
+        sh:message "QuotedItem.item_type must use an allowed item type."
+    ] ;
+    sh:property [
+        sh:path ex:hasIdentifier ; sh:maxCount 1 ;
+        sh:class ex:MaterialIdentifier ; sh:nodeKind sh:IRI ;
+        sh:message "A QuotedItem may have at most one aggregate MaterialIdentifier."
+    ] ;
+    sh:property [
+        sh:path [ sh:inversePath ex:correspondsTo ] ;
+        sh:minCount 1 ; sh:maxCount 1 ; sh:class ex:QuotationLine ;
+        sh:message "Every QuotedItem must correspond to exactly one QuotationLine."
+    ] .
+
+ex:MaterialIdentifierShape
+    a sh:NodeShape ;
+    sh:targetClass ex:MaterialIdentifier ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property ex:EntityIdPropertyShape ;
+    sh:property [
+        sh:path ex:code12nc ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:pattern "^4022\\.[0-9]{3}\\.[0-9]{5}$" ;
+        sh:message "code_12nc must use normalized dotted notation, for example 4022.123.45678."
+    ] ;
+    sh:property [ sh:path ex:manufacturerPartNumber ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:minLength 1 ] ;
+    sh:property [ sh:path ex:supplierItemNumber ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:minLength 1 ] ;
+    sh:property [ sh:path ex:customerItemNumber ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:minLength 1 ] ;
+    sh:or (
+        [ sh:property [ sh:path ex:code12nc ; sh:minCount 1 ] ]
+        [ sh:property [ sh:path ex:manufacturerPartNumber ; sh:minCount 1 ] ]
+        [ sh:property [ sh:path ex:supplierItemNumber ; sh:minCount 1 ] ]
+        [ sh:property [ sh:path ex:customerItemNumber ; sh:minCount 1 ] ]
+    ) ;
+    sh:message "MaterialIdentifier must contain at least one supported identifier property; multiple identifier properties may coexist." ;
+    sh:property [
+        sh:path [ sh:inversePath ex:hasIdentifier ] ;
+        sh:minCount 1 ; sh:maxCount 1 ; sh:class ex:QuotedItem ;
+        sh:message "Every MaterialIdentifier must identify exactly one QuotedItem."
+    ] .
+
+#################################################################
+# LeadTime and Warranty
+#################################################################
+
+ex:LeadTimeShape
+    a sh:NodeShape ;
+    sh:targetClass ex:LeadTime ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property ex:EntityIdPropertyShape ;
+    sh:property [
+        sh:path ex:value ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:decimal ; sh:minExclusive 0 ;
+        sh:message "LeadTime.value must be greater than zero."
+    ] ;
+    sh:property [
+        sh:path ex:unit ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:in (
+            "DAYS"^^xsd:string
+            "WEEKS"^^xsd:string
+            "MONTHS"^^xsd:string
+            "YEARS"^^xsd:string
+        ) ;
+        sh:message "LeadTime.unit must use an allowed duration unit."
+    ] ;
+    sh:property [
+        sh:path [ sh:inversePath ex:hasLeadTime ] ;
+        sh:minCount 1 ; sh:maxCount 1 ; sh:class ex:QuotationLine ;
+        sh:message "Every LeadTime must belong to exactly one QuotationLine."
+    ] .
+
+ex:WarrantyShape
+    a sh:NodeShape ;
+    sh:targetClass ex:Warranty ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property ex:EntityIdPropertyShape ;
+    sh:property [
+        sh:path ex:durationValue ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:decimal ; sh:minExclusive 0 ;
+        sh:message "Warranty.duration_value must be greater than zero."
+    ] ;
+    sh:property [
+        sh:path ex:durationUnit ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:in (
+            "DAYS"^^xsd:string
+            "WEEKS"^^xsd:string
+            "MONTHS"^^xsd:string
+            "YEARS"^^xsd:string
+        ) ;
+        sh:message "Warranty.duration_unit must use an allowed duration unit."
+    ] ;
+    sh:property [
+        sh:path [ sh:inversePath ex:hasWarranty ] ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:or ( [ sh:class ex:Quotation ] [ sh:class ex:QuotationLine ] ) ;
+        sh:message "Every Warranty must have exactly one incoming HAS_WARRANTY from either Quotation or QuotationLine."
+    ] .
+
+#################################################################
+# OrderQuantity
+#################################################################
+
+ex:OrderQuantityShape
+    a sh:NodeShape ;
+    sh:targetClass ex:OrderQuantity ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property ex:EntityIdPropertyShape ;
+    sh:property [
+    sh:path ex:value ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:decimal ;
+    sh:minExclusive 0 ;
+    sh:message "OrderQuantity.value must be greater than zero."
+    ] ;
+
+    sh:property [
+        sh:path ex:unitOfMeasure ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:in (
+            "PC"^^xsd:string
+            "EA"^^xsd:string
+            "SET"^^xsd:string
+            "PAIR"^^xsd:string
+            "LOT"^^xsd:string
+            "BOX"^^xsd:string
+            "PACK"^^xsd:string
+            "BAG"^^xsd:string
+            "M"^^xsd:string
+            "MM"^^xsd:string
+            "CM"^^xsd:string
+            "M2"^^xsd:string
+            "M3"^^xsd:string
+            "KG"^^xsd:string
+            "G"^^xsd:string
+            "L"^^xsd:string
+            "ML"^^xsd:string
+            "H"^^xsd:string
+            "DAY"^^xsd:string
+        ) ;
+        sh:message "OrderQuantity.unit_of_measure must use an allowed unit."
+    ] ;
+
+    sh:property [
+        sh:path ex:unitsPerPackage ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:decimal ;
+        sh:minExclusive 0 ;
+        sh:message "OrderQuantity.units_per_package must be greater than zero when provided."
+    ] ;
+
+        sh:property [
+        sh:path ex:containedUnitOfMeasure ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:in (
+            "PC"^^xsd:string
+            "EA"^^xsd:string
+            "SET"^^xsd:string
+            "PAIR"^^xsd:string
+            "LOT"^^xsd:string
+            "BOX"^^xsd:string
+            "PACK"^^xsd:string
+            "BAG"^^xsd:string
+            "M"^^xsd:string
+            "MM"^^xsd:string
+            "CM"^^xsd:string
+            "M2"^^xsd:string
+            "M3"^^xsd:string
+            "KG"^^xsd:string
+            "G"^^xsd:string
+            "L"^^xsd:string
+            "ML"^^xsd:string
+            "H"^^xsd:string
+            "DAY"^^xsd:string
+        );
+        sh:message "OrderQuantity.contained_unit_of_measure must use an allowed unit."
+    ] ;
+
+    sh:xone (
+        [
+            sh:property [
+                sh:path [
+                    sh:inversePath ex:hasMinOrderQuantity
+                ] ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+                sh:class ex:QuotationLine
+            ]
+        ]
+        [
+            sh:property [
+                sh:path [
+                    sh:inversePath ex:hasMaxOrderQuantity
+                ] ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+                sh:class ex:QuotationLine
+            ]
+        ]
+        [
+            sh:property [
+                sh:path [
+                    sh:inversePath ex:hasOrderMultiple
+                ] ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+                sh:class ex:QuotationLine
+            ]
+        ]
+        [
+            sh:property [
+                sh:path [
+                    sh:inversePath ex:hasQuotedQuantity
+                ] ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+                sh:or (
+                    [ sh:class ex:StandardPricing ]
+                    [ sh:class ex:PriceTier ]
+                )
+            ]
+        ]
+        [
+            sh:property [
+                sh:path [
+                    sh:inversePath ex:hasMinQuantity
+                ] ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+                sh:class ex:PriceTier
+            ]
+        ]
+        [
+            sh:property [
+                sh:path [
+                    sh:inversePath ex:hasMaxQuantity
+                ] ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+                sh:class ex:PriceTier
+            ]
+        ]
+    ) ;
+    sh:message "Every OrderQuantity must have exactly one incoming quantity-role relationship." ;
+
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "units_per_package and contained_unit_of_measure must either both be present or both be absent." ;
+        sh:select """
+            PREFIX ex: <https://example.org/quotation-kg/>
+
+            SELECT $this
+            WHERE {
+                {
+                    $this ex:unitsPerPackage ?count .
+                    FILTER NOT EXISTS {
+                        $this ex:containedUnitOfMeasure ?unit .
+                    }
+                }
+                UNION
+                {
+                    $this ex:containedUnitOfMeasure ?unit .
+                    FILTER NOT EXISTS {
+                        $this ex:unitsPerPackage ?count .
+                    }
+                }
+            }
+        """
+    ] .
+
+#################################################################
+# StandardPricing and TieredPricing
+#################################################################
+
+ex:StandardPricingShape
+    a sh:NodeShape ;
+    sh:targetClass ex:StandardPricing ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property ex:EntityIdPropertyShape ;
+    sh:property [
+        sh:path ex:hasMonetaryAmount ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class ex:MonetaryAmount ; sh:nodeKind sh:IRI ;
+        sh:message "StandardPricing must have exactly one MonetaryAmount representing the unit price."
+    ] ;
+    sh:property [
+        sh:path ex:hasQuotedQuantity ;
+        sh:maxCount 1 ;
+        sh:class ex:OrderQuantity ;
+        sh:nodeKind sh:IRI ;
+        sh:message "StandardPricing may have at most one quoted quantity. The associated MonetaryAmount represents the unit price applicable to this quoted quantity."
+    ] ;
+    sh:property [
+        sh:path ex:hasPriceComponent ;
+        sh:class ex:PriceComponent ; sh:nodeKind sh:IRI ;
+        sh:message "HAS_PRICE_COMPONENT must point to PriceComponent."
+    ] ;
+    sh:property [
+        sh:path [ sh:inversePath ex:hasPricing ] ;
+        sh:minCount 1 ; sh:maxCount 1 ; sh:class ex:QuotationLine ;
+        sh:message "Every StandardPricing must belong to exactly one QuotationLine."
+    ] .
+
+ex:TieredPricingShape
+    a sh:NodeShape ;
+    sh:targetClass ex:TieredPricing ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property ex:EntityIdPropertyShape ;
+    sh:property [
+        sh:path ex:hasPriceTier ; sh:minCount 2 ;
+        sh:class ex:PriceTier ; sh:nodeKind sh:IRI ;
+        sh:message "TieredPricing must contain at least two PriceTier entities."
+    ] ;
+    sh:property [
+        sh:path ex:hasPriceComponent ;
+        sh:class ex:PriceComponent ; sh:nodeKind sh:IRI ;
+        sh:message "HAS_PRICE_COMPONENT must point to PriceComponent."
+    ] ;
+    sh:property [
+        sh:path [ sh:inversePath ex:hasPricing ] ;
+        sh:minCount 1 ; sh:maxCount 1 ; sh:class ex:QuotationLine ;
+        sh:message "Every TieredPricing must belong to exactly one QuotationLine."
+    ] ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "price_number values must be unique within one TieredPricing structure." ;
+        sh:select """
+            PREFIX ex: <https://example.org/quotation-kg/>
+            SELECT $this
+            WHERE {
+                $this ex:hasPriceTier ?tier1, ?tier2 .
+                ?tier1 ex:priceNumber ?number .
+                ?tier2 ex:priceNumber ?number .
+                FILTER (?tier1 != ?tier2)
+            }
+        """
+    ] .
+
+#################################################################
+# PriceTier
+#################################################################
+
+ex:PriceTierShape
+    a sh:NodeShape ;
+    sh:targetClass ex:PriceTier ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+
+    sh:property ex:EntityIdPropertyShape ;
+
+    sh:property [
+        sh:path ex:priceNumber ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:minInclusive 1 ;
+        sh:message "Every PriceTier must have exactly one positive price_number."
+    ] ;
+
+    sh:property [
+        sh:path ex:hasMonetaryAmount ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:class ex:MonetaryAmount ;
+        sh:nodeKind sh:IRI ;
+        sh:message "Every PriceTier must have exactly one MonetaryAmount representing the unit price applicable to that tier."
+    ] ;
+
+    sh:property [
+        sh:path ex:hasQuotedQuantity ;
+        sh:maxCount 1 ;
+        sh:class ex:OrderQuantity ;
+        sh:nodeKind sh:IRI ;
+        sh:message "A PriceTier may have at most one exact quoted quantity."
+    ] ;
+
+    sh:property [
+        sh:path ex:hasMinQuantity ;
+        sh:maxCount 1 ;
+        sh:class ex:OrderQuantity ;
+        sh:nodeKind sh:IRI ;
+        sh:message "A PriceTier may have at most one minimum quantity boundary."
+    ] ;
+
+    sh:property [
+        sh:path ex:hasMaxQuantity ;
+        sh:maxCount 1 ;
+        sh:class ex:OrderQuantity ;
+        sh:nodeKind sh:IRI ;
+        sh:message "A PriceTier may have at most one maximum quantity boundary."
+    ] ;
+
+    sh:xone (
+        [
+            sh:property [
+                sh:path ex:hasQuotedQuantity ;
+                sh:minCount 1 ;
+                sh:maxCount 1
+            ] ;
+            sh:property [
+                sh:path ex:hasMinQuantity ;
+                sh:maxCount 0
+            ] ;
+            sh:property [
+                sh:path ex:hasMaxQuantity ;
+                sh:maxCount 0
+            ]
+        ]
+        [
+            sh:property [
+                sh:path ex:hasQuotedQuantity ;
+                sh:maxCount 0
+            ] ;
+            sh:or (
+                [
+                    sh:property [
+                        sh:path ex:hasMinQuantity ;
+                        sh:minCount 1 ;
+                        sh:maxCount 1
+                    ]
+                ]
+                [
+                    sh:property [
+                        sh:path ex:hasMaxQuantity ;
+                        sh:minCount 1 ;
+                        sh:maxCount 1
+                    ]
+                ]
+            )
+        ]
+    ) ;
+
+    sh:message "Every PriceTier must use exactly one quantity representation: one exact quoted quantity, or one or both quantity-range boundaries." ;
+
+    sh:property [
+        sh:path [
+            sh:inversePath ex:hasPriceTier
+        ] ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:class ex:TieredPricing ;
+        sh:message "Every PriceTier must belong to exactly one TieredPricing structure."
+    ] ;
+
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "A tier minimum quantity must not exceed its maximum quantity." ;
+        sh:select """
+            PREFIX ex: <https://example.org/quotation-kg/>
+
+            SELECT $this
+            WHERE {
+                $this
+                    ex:hasMinQuantity ?minQ ;
+                    ex:hasMaxQuantity ?maxQ .
+
+                ?minQ ex:value ?minValue .
+                ?maxQ ex:value ?maxValue .
+
+                FILTER (?minValue > ?maxValue)
+            }
+        """
+    ] ;
+
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "Tier minimum and maximum quantities must use the same unit_of_measure." ;
+        sh:select """
+            PREFIX ex: <https://example.org/quotation-kg/>
+
+            SELECT $this
+            WHERE {
+                $this
+                    ex:hasMinQuantity ?minQ ;
+                    ex:hasMaxQuantity ?maxQ .
+
+                ?minQ ex:unitOfMeasure ?minUnit .
+                ?maxQ ex:unitOfMeasure ?maxUnit .
+
+                FILTER (?minUnit != ?maxUnit)
+            }
+        """
+    ] .
+
+#################################################################
+# PriceComponent and MonetaryAmount
+#################################################################
+
+ex:PriceComponentShape
+    a sh:NodeShape ;
+    sh:targetClass ex:PriceComponent ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property ex:EntityIdPropertyShape ;
+    sh:property [
+        sh:path ex:componentType ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:in ( "PACKAGING"^^xsd:string "TRANSPORT"^^xsd:string "HANDLING"^^xsd:string "TOOLING"^^xsd:string "SETUP"^^xsd:string "ENGINEERING"^^xsd:string "SURCHARGE"^^xsd:string "DISCOUNT"^^xsd:string "OTHER"^^xsd:string) ;
+        sh:message "PriceComponent.component_type must use an allowed value."
+    ] ;
+    sh:property [
+        sh:path ex:description ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:minLength 1
+    ] ;
+    sh:property [
+        sh:path ex:hasMonetaryAmount ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class ex:MonetaryAmount ; sh:nodeKind sh:IRI ;
+        sh:message "Every PriceComponent must have exactly one MonetaryAmount."
+    ] ;
+    sh:property [
+        sh:path [ sh:inversePath ex:hasPriceComponent ] ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:or ( [ sh:class ex:StandardPricing ] [ sh:class ex:TieredPricing ] ) ;
+        sh:message "Every PriceComponent must belong to exactly one StandardPricing or TieredPricing structure."
+    ] .
+
+ex:MonetaryAmountShape
+    a sh:NodeShape ;
+    sh:targetClass ex:MonetaryAmount ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property ex:EntityIdPropertyShape ;
+    sh:property [
+        sh:path ex:value ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:decimal ; sh:minInclusive 0 ;
+        sh:message "MonetaryAmount.value must be non-negative."
+    ] ;
+    sh:property [
+        sh:path ex:currency ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:in (
+            "EUR"^^xsd:string
+            "USD"^^xsd:string
+            "GBP"^^xsd:string
+            "CHF"^^xsd:string
+            "JPY"^^xsd:string
+            "CNY"^^xsd:string
+            "SEK"^^xsd:string
+            "NOK"^^xsd:string
+            "DKK"^^xsd:string
+            "PLN"^^xsd:string
+            "CZK"^^xsd:string
+            "TWD"^^xsd:string
+            "KRW"^^xsd:string
+            "CAD"^^xsd:string
+            "AUD"^^xsd:string
+            "INR"^^xsd:string
+            "SGD"^^xsd:string
+            "MYR"^^xsd:string
+        );
+        sh:message "MonetaryAmount.currency must use an allowed currency code."
+    ] ;
+    sh:property [
+        sh:path ex:vatPercentage ; sh:maxCount 1 ;
+        sh:datatype xsd:decimal ; sh:minInclusive 0 ; sh:maxInclusive 100
+    ] ;
+    sh:property [
+        sh:path ex:vatInclusion ; sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:in ( "INCLUDED"^^xsd:string "EXCLUDED"^^xsd:string "NOT_APPLICABLE"^^xsd:string )
+    ] ;
+    sh:property [
+        sh:path [ sh:inversePath ex:hasMonetaryAmount ] ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:or (
+            [ sh:class ex:StandardPricing ]
+            [ sh:class ex:PriceTier ]
+            [ sh:class ex:PriceComponent ]
+        ) ;
+        sh:message "Every MonetaryAmount must have exactly one incoming HAS_MONETARY_AMOUNT from StandardPricing, PriceTier, or PriceComponent."
+    ] .

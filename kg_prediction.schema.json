@@ -1,0 +1,841 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/quotation-kg-prediction.schema.json",
+  "title": "Quotation Knowledge Graph Extraction",
+  "description": "Structured extraction output for one supplier quotation document. The schema validates entity and relationship structure, required properties, datatypes, formats, and controlled values. Relationship domain and range, reference integrity, outgoing cardinalities, incoming participation constraints, orphan prevention, exclusive ownership, subclass constraints, and cross-entity value constraints are validated separately through SHACL. Scheduled delivery plans and schedule lines are outside the scope of this schema.",
+  "type": "object",
+  "properties": {
+    "entities": {
+      "description": "Entities explicitly supported by one supplier quotation document.",
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/quotationEntity"
+          },
+          {
+            "$ref": "#/$defs/quotationLineEntity"
+          },
+          {
+            "$ref": "#/$defs/supplierEntity"
+          },
+          {
+            "$ref": "#/$defs/countryEntity"
+          },
+          {
+            "$ref": "#/$defs/validityPeriodEntity"
+          },
+          {
+            "$ref": "#/$defs/quotedItemEntity"
+          },
+          {
+            "$ref": "#/$defs/materialIdentifierEntity"
+          },
+          {
+            "$ref": "#/$defs/leadTimeEntity"
+          },
+          {
+            "$ref": "#/$defs/warrantyEntity"
+          },
+          {
+            "$ref": "#/$defs/orderQuantityEntity"
+          },
+          {
+            "$ref": "#/$defs/standardPricingEntity"
+          },
+          {
+            "$ref": "#/$defs/tieredPricingEntity"
+          },
+          {
+            "$ref": "#/$defs/priceTierEntity"
+          },
+          {
+            "$ref": "#/$defs/monetaryAmountEntity"
+          },
+          {
+            "$ref": "#/$defs/priceComponentEntity"
+          }
+        ]
+      },
+      "allOf": [
+        {
+          "contains": {
+            "$ref": "#/$defs/quotationEntity"
+          },
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "$ref": "#/$defs/supplierEntity"
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "$ref": "#/$defs/validityPeriodEntity"
+          },
+          "minContains": 0,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "$ref": "#/$defs/quotationLineEntity"
+          },
+          "minContains": 1
+        },
+        {
+          "contains": {
+            "$ref": "#/$defs/quotedItemEntity"
+          },
+          "minContains": 1
+        }
+      ]
+    },
+    "relationships": {
+      "description": "Directed relationships explicitly supported by the quotation document. Relationship endpoints refer to entity IDs in the entities array. Endpoint existence, domain and range, outgoing cardinalities, incoming participation, orphan prevention, and exclusive source constraints are validated separately through SHACL.",
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/relationship"
+      },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "ISSUED_BY"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "VALID_DURING"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "minContains": 0,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "HAS_LINE_ITEM"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "minContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "CORRESPONDS_TO"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "minContains": 1
+        }
+      ]
+    }
+  },
+  "required": [
+    "entities",
+    "relationships"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "entityId": {
+      "description": "Identifier unique within one extracted quotation document.",
+      "type": "string",
+      "pattern": "^e[0-9]+$"
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "languageCode": {
+      "description": "Primary language explicitly observable in the quotation document.",
+      "type": "string",
+      "enum": [
+        "EN",
+        "NL",
+        "DE"
+      ]
+    },
+    "currencyCode": {
+      "description": "Normalized currency explicitly stated in the quotation.",
+      "type": "string",
+      "enum": [
+        "EUR",
+        "USD",
+        "GBP",
+        "CHF",
+        "JPY",
+        "CNY",
+        "SEK",
+        "NOK",
+        "DKK",
+        "PLN",
+        "CZK",
+        "TWD",
+        "KRW",
+        "CAD",
+        "AUD",
+        "INR",
+        "SGD",
+        "MYR"
+      ]
+    },
+    "countryCode": {
+      "description": "Normalized country in which the supplier is explicitly located.",
+      "type": "string",
+      "enum": [
+        "NL",
+        "US",
+        "DE",
+        "HK",
+        "TW",
+        "SK",
+        "MY",
+        "GB",
+        "CH",
+        "CN",
+        "FR",
+        "BE",
+        "AT",
+        "CZ",
+        "PL",
+        "SE",
+        "DK",
+        "NO",
+        "FI",
+        "IT",
+        "ES",
+        "CA",
+        "JP",
+        "KR",
+        "SG",
+        "IN",
+        "IE",
+        "HU",
+        "RO",
+        "IL"
+      ]
+    },
+    "unitOfMeasure": {
+      "description": "Normalized unit of measure explicitly stated in the quotation.",
+      "type": "string",
+      "enum": [
+        "PC",
+        "EA",
+        "SET",
+        "PAIR",
+        "LOT",
+        "BOX",
+        "PACK",
+        "BAG",
+        "M",
+        "MM",
+        "CM",
+        "M2",
+        "M3",
+        "KG",
+        "G",
+        "L",
+        "ML",
+        "H",
+        "DAY"
+      ]
+    },
+    "durationUnit": {
+      "description": "Normalized duration unit used for validity periods, lead times, and warranties.",
+      "type": "string",
+      "enum": [
+        "DAYS",
+        "WEEKS",
+        "MONTHS",
+        "YEARS"
+      ]
+    },
+    "itemType": {
+      "description": "Normalized type of the item, product, service, or activity offered on a quotation line.",
+      "type": "string",
+      "enum": [
+        "MATERIAL",
+        "PRODUCT",
+        "SERVICE",
+        "LABOR",
+        "REPAIR",
+        "TOOLING",
+        "OTHER"
+      ]
+    },
+    "vatInclusion": {
+      "description": "Whether VAT is included in the monetary amount.",
+      "type": "string",
+      "enum": [
+        "INCLUDED",
+        "EXCLUDED",
+        "NOT_APPLICABLE"
+      ]
+    },
+    "priceComponentType": {
+      "description": "Normalized commercial role of a separately stated price component.",
+      "type": "string",
+      "enum": [
+        "PACKAGING",
+        "TRANSPORT",
+        "HANDLING",
+        "TOOLING",
+        "SETUP",
+        "ENGINEERING",
+        "SURCHARGE",
+        "DISCOUNT",
+        "OTHER"
+      ]
+    },
+    "dateValue": {
+      "description": "ISO 8601 calendar date.",
+      "type": "string",
+      "format": "date"
+    },
+    "quotationEntity": {
+      "description": "The root entity representing the supplier quotation document. Exactly one Quotation entity must occur in each extraction output.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "label": {
+          "const": "Quotation"
+        },
+        "language": {
+          "$ref": "#/$defs/languageCode"
+        },
+        "quotation_date": {
+          "$ref": "#/$defs/dateValue"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "language"
+      ],
+      "additionalProperties": false
+    },
+    "quotationLineEntity": {
+      "description": "A commercial line item explicitly occurring in the quotation. Every QuotationLine must have exactly one incoming HAS_LINE_ITEM relationship and exactly one outgoing CORRESPONDS_TO relationship, as validated through SHACL.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "label": {
+          "const": "QuotationLine"
+        },
+        "line_number": {
+          "description": "Positive sequential line number assigned to the quotation line.",
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "line_number"
+      ],
+      "additionalProperties": false
+    },
+    "supplierEntity": {
+      "description": "The organization issuing the quotation. Exactly one Supplier entity must occur in each extraction output and must have exactly one incoming ISSUED_BY relationship, as validated through SHACL.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "label": {
+          "const": "Supplier"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "countryEntity": {
+      "description": "A country explicitly stated as the general location of the supplier. Country-of-origin extraction is outside the scope of this schema.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "label": {
+          "const": "Country"
+        },
+        "country_code": {
+          "$ref": "#/$defs/countryCode"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "country_code"
+      ],
+      "additionalProperties": false
+    },
+    "validityPeriodEntity": {
+      "description": "An optional absolute or relative validity period explicitly stated for the quotation. Create this entity only when validity information is explicitly present. A validity period uses either an absolute date representation or a relative duration representation, but not both.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "label": {
+          "const": "ValidityPeriod"
+        },
+        "valid_from": {
+          "$ref": "#/$defs/dateValue"
+        },
+        "valid_to": {
+          "$ref": "#/$defs/dateValue"
+        },
+        "duration_value": {
+          "description": "Positive numerical duration of a relative validity period.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "duration_unit": {
+          "$ref": "#/$defs/durationUnit"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "oneOf": [
+        {
+          "anyOf": [
+            {
+              "required": [
+                "valid_from"
+              ]
+            },
+            {
+              "required": [
+                "valid_to"
+              ]
+            }
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "duration_value"
+                ]
+              },
+              {
+                "required": [
+                  "duration_unit"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "required": [
+            "duration_value",
+            "duration_unit"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "valid_from"
+                ]
+              },
+              {
+                "required": [
+                  "valid_to"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "dependentRequired": {
+        "duration_value": [
+          "duration_unit"
+        ],
+        "duration_unit": [
+          "duration_value"
+        ]
+      },
+      "additionalProperties": false
+    },
+    "quotedItemEntity": {
+      "description": "The material, product, component, service, labor activity, repair, tooling activity, or other item explicitly offered on a quotation line.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "label": {
+          "const": "QuotedItem"
+        },
+        "description": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "item_type": {
+          "$ref": "#/$defs/itemType"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "description",
+        "item_type"
+      ],
+      "additionalProperties": false
+    },
+    "materialIdentifierEntity": {
+      "description": "An aggregate identifier entity associated with one quoted item. At least one supported identifier property must exist, and multiple identifier properties may coexist in the same entity.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "label": {
+          "const": "MaterialIdentifier"
+        },
+        "code_12nc": {
+          "description": "ASML 12NC explicitly written in normalized dotted notation, consisting of 4022, three digits, and five digits.",
+          "type": "string",
+          "pattern": "^4022\\.[0-9]{3}\\.[0-9]{5}$"
+        },
+        "manufacturer_part_number": {
+          "description": "Manufacturer part number explicitly associated with the quoted item.",
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "supplier_item_number": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "customer_item_number": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "anyOf": [
+        {
+          "required": [
+            "code_12nc"
+          ]
+        },
+        {
+          "required": [
+            "manufacturer_part_number"
+          ]
+        },
+        {
+          "required": [
+            "supplier_item_number"
+          ]
+        },
+        {
+          "required": [
+            "customer_item_number"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "leadTimeEntity": {
+      "description": "A general lead-time duration explicitly stated for one quotation line. Create this entity only for a general duration, such as three weeks after order or six weeks after receipt of order. Do not create a LeadTime entity for scheduled deliveries, delivery schedules, phased shipments, separate delivery dates, or quantities assigned to specific dates.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "label": {
+          "const": "LeadTime"
+        },
+        "value": {
+          "description": "Strictly positive numerical lead-time duration.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "unit": {
+          "$ref": "#/$defs/durationUnit"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "value",
+        "unit"
+      ],
+      "additionalProperties": false
+    },
+    "warrantyEntity": {
+      "description": "A warranty duration explicitly applicable either to the complete quotation or to one quotation line. Exactly one incoming HAS_WARRANTY relationship from either a Quotation or a QuotationLine, but not both, is validated through SHACL.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "label": {
+          "const": "Warranty"
+        },
+        "duration_value": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "duration_unit": {
+          "$ref": "#/$defs/durationUnit"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "duration_value",
+        "duration_unit"
+      ],
+      "additionalProperties": false
+    },
+    "orderQuantityEntity": {
+      "description": "A quantity occurrence used in exactly one ordering or pricing role. Exclusive incoming quantity-role ownership is validated through SHACL.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "label": {
+          "const": "OrderQuantity"
+        },
+        "value": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "unit_of_measure": {
+          "$ref": "#/$defs/unitOfMeasure"
+        },
+        "units_per_package": {
+          "description": "Number of contained units in one package-level order unit.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "contained_unit_of_measure": {
+          "$ref": "#/$defs/unitOfMeasure"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "value",
+        "unit_of_measure"
+      ],
+      "dependentRequired": {
+        "units_per_package": [
+          "contained_unit_of_measure"
+        ],
+        "contained_unit_of_measure": [
+          "units_per_package"
+        ]
+      },
+      "additionalProperties": false
+    },
+    "standardPricingEntity": {
+      "description": "A concrete non-tiered pricing structure for one quotation line. StandardPricing and TieredPricing are disjoint and complete subclasses of the abstract PricingStructure concept.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "label": {
+          "const": "StandardPricing"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "additionalProperties": false
+    },
+    "tieredPricingEntity": {
+      "description": "A concrete pricing structure in which different prices are explicitly associated with different exact quantities or quantity ranges. A valid TieredPricing entity must have at least two outgoing HAS_PRICE_TIER relationships, as validated through SHACL.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "label": {
+          "const": "TieredPricing"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "additionalProperties": false
+    },
+    "priceTierEntity": {
+      "description": "One exact-quantity or range-based price tier within a TieredPricing structure. Every PriceTier must have exactly one monetary amount and must use either HAS_QUOTED_QUANTITY or a minimum and/or maximum quantity representation, but not both. These relationship-pattern constraints are validated through SHACL.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "label": {
+          "const": "PriceTier"
+        },
+        "price_number": {
+          "description": "Positive sequential position of the tier within its tiered-pricing structure.",
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "price_number"
+      ],
+      "additionalProperties": false
+    },
+    "monetaryAmountEntity": {
+      "description": "One occurrence of an explicitly stated monetary value. Each MonetaryAmount must have exactly one incoming HAS_MONETARY_AMOUNT relationship from exactly one StandardPricing, PriceTier, or PriceComponent entity, as validated through SHACL.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "label": {
+          "const": "MonetaryAmount"
+        },
+        "value": {
+          "type": "number",
+          "minimum": 0
+        },
+        "currency": {
+          "$ref": "#/$defs/currencyCode"
+        },
+        "vat_percentage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "vat_inclusion": {
+          "$ref": "#/$defs/vatInclusion"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "value",
+        "currency"
+      ],
+      "additionalProperties": false
+    },
+    "priceComponentEntity": {
+      "description": "A separately and numerically stated additional cost, discount, or price adjustment associated with a StandardPricing or TieredPricing structure. Every PriceComponent must have exactly one monetary amount.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "label": {
+          "const": "PriceComponent"
+        },
+        "component_type": {
+          "$ref": "#/$defs/priceComponentType"
+        },
+        "description": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "component_type"
+      ],
+      "additionalProperties": false
+    },
+    "relationshipType": {
+      "description": "Permitted ontology relationship type.",
+      "type": "string",
+      "enum": [
+        "HAS_LINE_ITEM",
+        "ISSUED_BY",
+        "LOCATED_IN",
+        "VALID_DURING",
+        "CORRESPONDS_TO",
+        "HAS_IDENTIFIER",
+        "HAS_LEAD_TIME",
+        "HAS_WARRANTY",
+        "HAS_MIN_ORDER_QUANTITY",
+        "HAS_MAX_ORDER_QUANTITY",
+        "HAS_ORDER_MULTIPLE",
+        "HAS_PRICING",
+        "HAS_QUOTED_QUANTITY",
+        "HAS_PRICE_TIER",
+        "HAS_MIN_QUANTITY",
+        "HAS_MAX_QUANTITY",
+        "HAS_MONETARY_AMOUNT",
+        "HAS_PRICE_COMPONENT"
+      ]
+    },
+    "relationship": {
+      "description": "A directed Neo4j-style relationship between two extracted entities. The source_id and target_id must resolve to entity IDs in the same extraction output. Reference integrity, domain and range, outgoing cardinality, incoming participation, orphan prevention, and XOR ownership constraints are validated separately through SHACL.",
+      "type": "object",
+      "properties": {
+        "source_id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "target_id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "type": {
+          "$ref": "#/$defs/relationshipType"
+        }
+      },
+      "required": [
+        "source_id",
+        "target_id",
+        "type"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
